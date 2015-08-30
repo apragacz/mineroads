@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>MineRoads</title>
+    <!-- build:css css/all.css -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
+    <!-- endbuild -->
 </head>
 <body>
     <div id="canvas-container">
@@ -27,11 +29,11 @@
             gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
         }
     </script>
-    <script type="text/javascript" src="js/glMatrix-0.9.5.min.js"></script>
+    <!-- build:js js/all.js -->
+    <script type="text/javascript" src="js/gl-matrix.custom.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
-    <script type="text/javascript">
-    startApp();
-    </script>
+    <!-- endbuild -->
+    <script type="text/javascript">startApp();</script>
 
 </body>
 </html>
