@@ -28,8 +28,8 @@
         return {
             projectionMatrix: pMatrix,
             modelViewMatrix: mvMatrix
-        }
-    }
+        };
+    };
 
     var createShaderProgram = function (gl, vertexShaderCode, fragmentShaderCode) {
         var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -79,7 +79,7 @@
         triangleVertexPositionBuffer.itemSize = 3;
         triangleVertexPositionBuffer.numItems = Math.ceil(vertices.length / 3);
         return triangleVertexPositionBuffer;
-    }
+    };
 
     var drawScene = function (gl, shaderProgram, pMatrix, mvMatrix, triangleVertexPositionBuffer) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -100,7 +100,7 @@
         console.log('drawing ok');
         console.log(triangleVertexPositionBuffer.numItems);
 
-    }
+    };
 
     var startApp = function () {
         var canvas = document.getElementById('canvas');
@@ -115,7 +115,7 @@
 
         var gl = getGLContext(canvas);
         if (!gl) {
-            alert('no gl ;(')
+            alert('no gl ;(');
             return;
         }
         var glInitData = initGL(gl);
