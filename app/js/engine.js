@@ -19,6 +19,7 @@
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.CULL_FACE);
         var mvMatrix = mat4.create();
         var pMatrix = mat4.create();
         //mat4 is from glMatrix library
