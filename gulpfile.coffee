@@ -1,36 +1,37 @@
 gulp = require('gulp')
-uglify = require('gulp-uglify')
-jshint = require("gulp-jshint")
 concat = require('gulp-concat')
 cssmin = require('gulp-cssmin')
+gulpif = require('gulp-if')
+jshint = require("gulp-jshint")
 minifyHTML = require('gulp-minify-html')
+uglify = require('gulp-uglify')
+useref = require('gulp-useref');
 zip = require('gulp-zip');
 
-gulp.task 'minify-js', ->
-    gulp.src('app/js/*.js')
-        .pipe(uglify())
-        .pipe(concat('js/app.js'))
-        .pipe(gulp.dest('build'))
 
-gulp.task 'minify-html', ->
+gulp.task 'process-html', ->
+    assets = useref.assets();
+
     gulp.src('app/index.html')
+        .pipe(assets)
+        #.pipe(gulpif('*.js', uglify()))
+        .pipe(gulpif('*.css', cssmin()))
+        .pipe(assets.restore())
+        .pipe(useref())
         .pipe(minifyHTML())
-        .pipe(gulp.dest('build'))
+        .pipe(gulp.dest('dist'))
 
-
-gulp.task 'minify-css', ->
-    gulp.src('app/css/*.css')
-        .pipe(cssmin())
-        .pipe(concat('css/style.css'))
-        .pipe(gulp.dest('build'))
 
 gulp.task 'copy-img', ->
     gulp.src('app/img/*')
-        .pipe(gulp.dest('build/img/'))
+        .pipe(gulp.dest('dist/img/'))
 
 
-gulp.task 'zip', ['minify-js', 'minify-css', 'minify-html', 'copy-img'], ->
-    gulp.src('build/**')
+gulp.task 'build', ['process-html', 'copy-img'], ->
+
+
+gulp.task 'zip', ['build'], ->
+    gulp.src('dist/**')
         .pipe(zip('game.zip'))
         .pipe(gulp.dest('.'));
 
