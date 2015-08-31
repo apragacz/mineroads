@@ -18,6 +18,7 @@
     "no-func-assign": 2,
     "valid-typeof": 2,
     "no-extra-semi": 2,
+    "no-undef": 2,
     "space-after-keywords": [1, "always"],
     "space-infix-ops": [1, {"int32Hint": true}],
     "space-unary-ops": [1, { "words": true, "nonwords": false }],
