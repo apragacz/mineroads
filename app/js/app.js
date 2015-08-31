@@ -1,3 +1,4 @@
+/* global mat4, createVertexBuffer */
 (function () {
     'use strict';
 
@@ -73,6 +74,24 @@
         [0, 0, 0, 1, 1, 1, 0, 0, 0],
     ];
 
+    var chunks = {
+        '0': [[].concat(zero, zero)],
+        '1': [[].concat(one, one, one, one, one, one)],
+        '1t2': [[].concat(twoToOne).reverse()],
+        '2t1': [[].concat(twoToOne)],
+        '2': [[].concat(two, two, two, two, two, two)],
+        '2l': [[].concat(twoLeft, twoLeft, twoLeft, twoLeft, twoLeft, twoLeft)],
+        '2r': [[].concat(twoRight, twoRight, twoRight, twoRight, twoRight, twoRight)],
+        '2t3': [[].concat(threeToTwo).reverse()],
+        '3t2': [[].concat(threeToTwo)],
+        '3': [[].concat(three, three, three, three, three, three)],
+    };
+
+    var nextChunks = {
+        '0': {
+            '1': 1,
+        },
+    };
 
     function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix) {
 
