@@ -4,7 +4,7 @@
 
     var rot = 0;
     var vecBuf;
-    var w = 4, h = 1;
+    var w = 0.5, h = 1;
 
     function init(gl, shaderProgram) {
         var v = [
@@ -36,6 +36,8 @@
 
         vecBuf = createVertexBuffer(gl, data);
     }
+
+    var width = 9;
 
     var three = [
         [1, 0, 0, 0, 1, 0, 0, 0, 1],
@@ -74,7 +76,7 @@
         [0, 0, 0, 1, 1, 1, 0, 0, 0],
     ];
 
-    var chunks = {
+    var chunksMap = {
         '0': [[].concat(zero, zero)],
         '1': [[].concat(one, one, one, one, one, one)],
         '1t2': [[].concat(twoToOne).reverse()],
@@ -87,13 +89,58 @@
         '3': [[].concat(three, three, three, three, three, three)],
     };
 
-    var nextChunks = {
+    var nextChunkIdsMap = {
         '0': {
             '1': 1,
         },
+        '1': {
+            '1': 1,
+            '0': 1,
+        },
     };
 
-    function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix) {
+    function generateLevel(numOfChunks) {
+
+        var levelChunks = [];
+
+        var nextChunkId = '1';
+        var chunkIds = [];
+        for (var i = 0; i < numOfChunks; i++) {
+            levelChunks.push(chunksMap[nextChunkId]);
+            chunkIds = Object.keys(nextChunkIdsMap[nextChunkId] || {});
+            nextChunkId = chunkIds[(Math.random() * chunkIds.length)|0];
+        }
+
+        return {
+            chunks: levelChunks,
+        };
+    }
+
+    function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix, chunk) {
+        var oldMVMatrix = mat4.create();
+        var layer = chunk[0];
+        var cell;
+
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
+                vecBuf.itemSize, gl.FLOAT,
+                false, 0, 0);
+        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vecBuf);
+        var widthHalf = (width / 2)|0;
+
+        for (var i = 0; i < layer.length; i++) {
+            for (var j = 0; j < width; j++) {
+                cell = layer[i][j];
+                if (cell === 0) {
+                    continue;
+                }
+                oldMVMatrix.set(mvMatrix);
+                mat4.translate(mvMatrix, [j - widthHalf, 0.0, -i]);
+                gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+                gl.drawArrays(gl.TRIANGLES, 0, vecBuf.numItems);
+                mvMatrix.set(oldMVMatrix);
+            }
+        }
 
     }
 
@@ -104,13 +151,7 @@
         mat4.translate(mvMatrix, [0.0, -0.5, -10.0]);
         mat4.rotate(mvMatrix, rot, [0.0, 1.0, 0.0]);
 
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
-                vecBuf.itemSize, gl.FLOAT,
-                false, 0, 0);
-        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-        gl.bindBuffer(gl.ARRAY_BUFFER, vecBuf);
-        gl.drawArrays(gl.TRIANGLES, 0, vecBuf.numItems);
+        renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix, chunksMap['2t3']);
     }
 
     function updateData() {
