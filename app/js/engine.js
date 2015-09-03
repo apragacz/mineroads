@@ -25,7 +25,7 @@
         //mat4 is from glMatrix library
         //setting projection matrix to perspective with fov=45
         mat4.perspective(45, gl.viewportWidth / gl.viewportHeight,
-                0.1, 100.0, pMatrix);
+                0.1, 1000.0, pMatrix);
         //setting modelview matrix to identity
         mat4.identity(mvMatrix);
         return {
