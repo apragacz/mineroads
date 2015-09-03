@@ -107,7 +107,7 @@
         }
     };
 
-    var state;
+    var currentState, stateStack;
     var negPos = vec3.create();
 
     var ACCELERATE = 'accelerate';
@@ -115,9 +115,12 @@
     var MOVE_LEFT = 'move-left';
     var MOVE_RIGHT = 'move-right';
     var JUMP = 'jump';
+    var REVERSE_TIME = 'reverse-time';
 
     var controlType = 1;
     var keyMap;
+    var MAX_FORWARD_SPEED = 0.3;
+    var MAX_TURN_SPEED = 0.5;
     var actions = {};
     keyMap = {
         37: MOVE_LEFT,
@@ -125,29 +128,29 @@
         39: MOVE_RIGHT,
         40: STOP,
 
-        17: JUMP,
+        32: JUMP,
+        17: REVERSE_TIME,
         //13: FIRE,
     };
 
     function getDefaultState(level) {
         return {
             level: level,
-            position: vec3.create([width / 2, 30.5, 0.0]),
-            speed: vec3.create([0, 0, -0.01]),
+            position: vec3.create([width / 2, 1.5, 0.0]),
+            speed: vec3.create([0, 0, 0]),
+            ground: true,
         };
     }
 
     function copyState(state) {
         return {
             level: state.level,
-            position: vec3.create(state.position),
-            speed: vec3.create(state.speed),
+            position: state.position,
+            speed: state.speed,
+            ground: state.ground,
         };
     }
 
-    function updateState(state) {
-        vec3.add(state.position, state.speed, state.position);
-    }
 
     function generateChunkIds(numOfChunks) {
         var chunkIds = [];
@@ -203,7 +206,8 @@
 
         vecBuf = createVertexBuffer(gl, data);
 
-        state = getDefaultState(generateLevel(40));
+        currentState = getDefaultState(generateLevel(40));
+        stateStack = []
     }
 
     function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix, chunk, shift) {
@@ -242,11 +246,11 @@
     function render(gl, shaderProgram, pMatrix, mvMatrix) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        vec3.negate(state.position, negPos);
+        vec3.negate(currentState.position, negPos);
         mat4.identity(mvMatrix);
-        mat4.rotate(mvMatrix, Math.PI / 2, [1.0, 0.0, 0.0]);
+        //mat4.rotate(mvMatrix, Math.PI / 9, [1.0, 0.0, 0.0]);
         mat4.translate(mvMatrix, negPos);
-        var chunks = state.level.chunks;
+        var chunks = currentState.level.chunks;
         var shift = 0;
         var shifts = [];
         for (var i = 0; i < chunks.length; i++) {
@@ -258,11 +262,88 @@
         firstRender = false;
     }
 
-    function updateData() {
-        if (actions[ACCELERATE]) {
-            //TODO:
+    function updateState(state) {
+        var newPosition = vec3.create();
+        var newSpeed = vec3.create(state.speed);
+
+        vec3.add(state.position, state.speed, newPosition);
+        if (newPosition[1] < 1.5) {
+            //TODO: collision detection
+            newPosition[1] = 1.5;
         }
-        updateState(state);
+
+        if (newPosition[1] === 1.5 && newSpeed[1] < 0) {
+            // bump
+            newSpeed[1] = -newSpeed[1] * 0.25;
+        }
+
+        // gravity
+        newSpeed[1] -= 0.0025;
+
+        state.ground = newPosition[1] <= 1.5;
+
+        if (state.ground) {
+            // left/right friction
+            newSpeed[0] *= 0.5;
+        }
+
+        state.position = newPosition;
+        state.speed = newSpeed;
+
+        return state;
+
+    }
+
+    function react(state) {
+        var speed = vec3.create(state.speed);
+
+        if (actions[ACCELERATE]) {
+            speed[2] -= 0.0008;
+            if (speed[2] < -MAX_FORWARD_SPEED) {
+                speed[2] = -MAX_FORWARD_SPEED;
+            }
+        }
+
+        if (state.ground) {
+            if (actions[STOP]) {
+                speed[2] += 0.01;
+                if (speed[2] > 0.0) {
+                    speed[2] = 0.0;
+                }
+            }
+
+            if (actions[MOVE_LEFT]) {
+                speed[0] -= 0.05;
+            }
+            if (actions[MOVE_RIGHT]) {
+                speed[0] += 0.05;
+            }
+            if (speed[0] > MAX_TURN_SPEED) {
+                speed[0] = MAX_TURN_SPEED;
+            } else if (speed[0] < -MAX_TURN_SPEED){
+                speed[0] = -MAX_TURN_SPEED;
+            }
+
+            if (actions[JUMP]) {
+                speed[1] += 0.06;
+            }
+
+        }
+        state.speed = speed;
+        return state;
+    }
+
+    function updateData() {
+        if (actions[REVERSE_TIME]) {
+            if (stateStack.length > 0) {
+                currentState = stateStack.pop();
+            }
+        } else {
+            currentState = copyState(currentState);
+            react(currentState);
+            updateState(currentState);
+            stateStack.push(currentState);
+        }
     }
 
     this.init = init;
