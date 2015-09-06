@@ -129,25 +129,30 @@
         40: STOP,
 
         32: JUMP,
-        17: REVERSE_TIME,
+        //17: JUMP,
+        82: REVERSE_TIME,
         //13: FIRE,
     };
 
     function getDefaultState(level) {
         return {
             level: level,
+            engine: 0,
             position: vec3.create([width / 2, 1.5, 0.0]),
             speed: vec3.create([0, 0, 0]),
             ground: true,
+            prevGround: true,
         };
     }
 
     function copyState(state) {
         return {
             level: state.level,
+            engine: state.engine,
             position: state.position,
             speed: state.speed,
             ground: state.ground,
+            prevGround: state.ground,
         };
     }
 
@@ -207,7 +212,7 @@
         vecBuf = createVertexBuffer(gl, data);
 
         currentState = getDefaultState(generateLevel(40));
-        stateStack = []
+        stateStack = [];
     }
 
     function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix, chunk, shift) {
@@ -278,7 +283,7 @@
         }
 
         // gravity
-        newSpeed[1] -= 0.0025;
+        newSpeed[1] -= 0.0030;
 
         state.ground = newPosition[1] <= 1.5;
 
@@ -296,46 +301,53 @@
 
     function react(state) {
         var speed = vec3.create(state.speed);
+        var engine = state.engine;
+        var turnEngine = engine * 0.2 + 0.001;
 
         if (actions[ACCELERATE]) {
-            speed[2] -= 0.0008;
-            if (speed[2] < -MAX_FORWARD_SPEED) {
-                speed[2] = -MAX_FORWARD_SPEED;
+            engine += 0.0008;
+            if (engine > MAX_FORWARD_SPEED) {
+                engine = MAX_FORWARD_SPEED;
+            }
+        }
+
+        if (actions[STOP]) {
+            engine -= 0.01;
+            if (engine < 0.0) {
+                engine = 0.0;
+            }
+        }
+
+        speed[2] = -engine;
+
+        if (state.ground || state.prevGround) {
+
+            if (actions[MOVE_LEFT]) {
+                vec3.add(speed, [-turnEngine, 0, 0]);
+            }
+            if (actions[MOVE_RIGHT]) {
+                vec3.add(speed, [turnEngine, 0, 0]);
             }
         }
 
         if (state.ground) {
-            if (actions[STOP]) {
-                speed[2] += 0.01;
-                if (speed[2] > 0.0) {
-                    speed[2] = 0.0;
-                }
-            }
-
-            if (actions[MOVE_LEFT]) {
-                speed[0] -= 0.05;
-            }
-            if (actions[MOVE_RIGHT]) {
-                speed[0] += 0.05;
-            }
-            if (speed[0] > MAX_TURN_SPEED) {
-                speed[0] = MAX_TURN_SPEED;
-            } else if (speed[0] < -MAX_TURN_SPEED){
-                speed[0] = -MAX_TURN_SPEED;
-            }
-
             if (actions[JUMP]) {
-                speed[1] += 0.06;
+                console.log('jump');
+                //debugger;
+                speed[1] += 0.07;
             }
 
         }
+
+        state.engine = engine;
         state.speed = speed;
         return state;
     }
 
     function updateData() {
         if (actions[REVERSE_TIME]) {
-            if (stateStack.length > 0) {
+            if (stateStack.length >= 2) {
+                stateStack.pop();
                 currentState = stateStack.pop();
             }
         } else {
@@ -343,6 +355,9 @@
             react(currentState);
             updateState(currentState);
             stateStack.push(currentState);
+            if (stateStack.length > 300) {
+                stateStack.shift();
+            }
         }
     }
 
@@ -352,6 +367,7 @@
 
     window.addEventListener('keyup', function (e) {
         var keyCode = e.which || e.keyCode;
+        console.log('keyup', keyCode);
         if (keyMap[keyCode]) {
             actions[keyMap[keyCode]] = false;
         }
@@ -359,6 +375,7 @@
 
     window.addEventListener('keydown', function (e) {
         var keyCode = e.which || e.keyCode;
+        console.log('keydown', keyCode);
         if (keyMap[keyCode]) {
             actions[keyMap[keyCode]] = true;
         }
