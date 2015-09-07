@@ -2,6 +2,22 @@
 (function () {
     'use strict';
 
+    function BBox(lo, hi) {
+        this.lo = vec3.create(lo);
+        this.hi = vec3.create(hi);
+    }
+
+    BBox.prototype.intersectCoord = function (bbox, i) {
+        return (bbox.lo[i] < this.hi[i]) && (this.lo[i] < bbox.hi[i]);
+    };
+
+
+    BBox.prototype.intersect = function (bbox) {
+        return (this.intersectCoord(bbox, 0)
+                    && this.intersectCoord(bbox, 1)
+                    && this.intersectCoord(bbox, 2));
+    };
+
     var rot = 0;
     var vecBuf, normalBuf;
     var w1 = 0, w2 = 1, h1 = 0, h2 = 1, d1 = -1, d2 = 0;
@@ -276,6 +292,7 @@
 
     }
 
+
     var firstRender = true;
 
     function render(gl, shaderProgram, pMatrix, mvMatrix) {
@@ -297,14 +314,67 @@
         firstRender = false;
     }
 
+    function intersectsWithChunk(playerBBox, chunk, shift) {
+        var layer = chunk[0];
+        var cell;
+        var vb1, vb2, bbox;
+
+        for (var i = 0; i < layer.length; i++) {
+            for (var j = 0; j < width; j++) {
+                cell = layer[i][j];
+                if (cell === 0) {
+                    continue;
+                }
+
+                vb1 = vec3.create([j, 0.0, -i - shift - 1]);
+                vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
+                bbox = new BBox(vb1, vb2);
+
+                if (playerBBox.intersect(bbox)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    function intersectsWithLevel(playerBBox, level) {
+        //debugger;
+        var chunks = level.chunks;
+        var shift = 0;
+        for (var i = 0; i < chunks.length; i++) {
+            if (intersectsWithChunk(playerBBox, chunks[i], shift)) {
+                return true;
+            }
+            shift += chunks[i][0].length;
+        }
+        return false;
+    }
+
+    function getBBox(position) {
+        var vb1 = vec3.add(position, [-0.5, -0.5, -0.5], vec3.create());
+        var vb2 = vec3.add(position, [0.5, 0.5, 0.5], vec3.create());
+        return new BBox(vb1, vb2);
+    }
+
     function updateState(state) {
         var newPosition = vec3.create();
         var newSpeed = vec3.create(state.speed);
+        var newPlayerBBox;
+        var groundLevelCoord = 1.5;
 
         vec3.add(state.position, state.speed, newPosition);
-        if (newPosition[1] < 1.5) {
-            //TODO: collision detection
-            newPosition[1] = 1.5;
+
+        newPlayerBBox = getBBox(newPosition);
+
+        if (intersectsWithLevel(newPlayerBBox, state.level)
+                && state.position[1] >= groundLevelCoord
+                && newPosition[1] < groundLevelCoord) {
+            newPosition[1] = groundLevelCoord;
+            state.ground = true;
+        } else {
+            state.ground = false;
         }
 
         if (newPosition[1] === 1.5 && newSpeed[1] < 0) {
@@ -314,8 +384,6 @@
 
         // gravity
         newSpeed[1] -= 0.0030;
-
-        state.ground = newPosition[1] <= 1.5;
 
         if (state.ground) {
             // left/right friction
