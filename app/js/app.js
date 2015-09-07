@@ -3,7 +3,7 @@
     'use strict';
 
     var rot = 0;
-    var vecBuf;
+    var vecBuf, normalBuf;
     var w1 = 0, w2 = 1, h1 = 0, h2 = 1, d1 = -1, d2 = 0;
     var width = 9;
 
@@ -192,7 +192,7 @@
             [w1, h1, d1],
             [w1, h1, d2],
         ];
-        var data = []
+        var vertices = []
             .concat(v[0], v[1], v[2])
             .concat(v[0], v[2], v[3])
 
@@ -209,7 +209,30 @@
             .concat(v[3], v[6], v[7])
         ;
 
-        vecBuf = createVertexBuffer(gl, data);
+        var normals = [];
+
+        var v1, v2, v3;
+        var cv1 = vec3.create();
+        var cv2 = vec3.create();
+        var cvr;
+
+        for (var i = 0; i < vertices.length; i += 9) {
+            cvr = [0, 0, 0];
+            v1 = vertices.slice(i, i + 3);
+            v2 = vertices.slice(i + 3, i + 6);
+            v3 = vertices.slice(i + 6, i + 9);
+
+            vec3.subtract(v1, v2, cv1);
+            vec3.subtract(v3, v2, cv2);
+            vec3.cross(cv2, cv1, cvr);
+            normals = normals.concat(cvr, cvr, cvr);
+        }
+
+        console.log('vertices', vertices);
+        console.log('normals', normals);
+
+        vecBuf = createVertexBuffer(gl, vertices);
+        normalBuf = createVertexBuffer(gl, normals);
 
         currentState = getDefaultState(generateLevel(40));
         stateStack = [];
@@ -227,6 +250,13 @@
                 false, 0, 0);
         gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
         gl.bindBuffer(gl.ARRAY_BUFFER, vecBuf);
+
+
+        if (shaderProgram.vertexNormalAttribute >= 0) {
+            gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute,
+                                   normalBuf.itemSize, gl.FLOAT, false, 0, 0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, normalBuf);
+        }
 
         translatedMatrix.set(mvMatrix);
         mat4.translate(translatedMatrix, [0.0, 0.0, -shift]);
