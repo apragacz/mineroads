@@ -19,7 +19,7 @@
     };
 
     var rot = 0;
-    var vecBuf, normalBuf;
+    var vecBuf, normalBuf, indexBuf;
     var w1 = 0, w2 = 1, h1 = 0, h2 = 1, d1 = -1, d2 = 0;
     var width = 9;
 
@@ -209,21 +209,29 @@
             [w1, h1, d2],
         ];
         var vertices = []
-            .concat(v[0], v[1], v[2])
-            .concat(v[0], v[2], v[3])
-
-            .concat(v[4], v[0], v[3])
-            .concat(v[4], v[3], v[7])
-
-            .concat(v[6], v[5], v[4])
-            .concat(v[7], v[6], v[4])
-
-            .concat(v[4], v[5], v[1])
-            .concat(v[4], v[1], v[0])
-
-            .concat(v[3], v[2], v[6])
-            .concat(v[3], v[6], v[7])
+            .concat(v[0], v[1], v[2], v[3])
+            .concat(v[4], v[0], v[3], v[7])
+            .concat(v[6], v[5], v[4], v[7])
+            .concat(v[4], v[5], v[1], v[0])
+            .concat(v[3], v[2], v[6], v[7])
         ;
+
+        var indices = [
+            0, 1, 2,
+            0, 2, 3,
+
+            4, 5, 6,
+            4, 6, 7,
+
+            8, 9, 10,
+            8, 10, 11,
+
+            12, 13, 14,
+            12, 14, 15,
+
+            16, 17, 18,
+            16, 18, 19,
+        ];
 
         var normals = [];
 
@@ -232,7 +240,7 @@
         var cv2 = vec3.create();
         var cvr;
 
-        for (var i = 0; i < vertices.length; i += 9) {
+        for (var i = 0; i < vertices.length; i += 12) {
             cvr = [0, 0, 0];
             v1 = vertices.slice(i, i + 3);
             v2 = vertices.slice(i + 3, i + 6);
@@ -241,14 +249,22 @@
             vec3.subtract(v1, v2, cv1);
             vec3.subtract(v3, v2, cv2);
             vec3.cross(cv2, cv1, cvr);
-            normals = normals.concat(cvr, cvr, cvr);
+            normals = normals.concat(cvr, cvr, cvr, cvr);
         }
 
         console.log('vertices', vertices);
         console.log('normals', normals);
+        console.log('indices', indices);
 
         vecBuf = createVertexBuffer(gl, vertices);
         normalBuf = createVertexBuffer(gl, normals);
+
+        indexBuf = gl.createBuffer();
+        indexBuf.numItems = indices.length;
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuf);
+
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices),
+                      gl.STATIC_DRAW);
 
         currentState = getDefaultState(generateLevel(40));
         stateStack = [];
@@ -261,18 +277,19 @@
         var layer = chunk[0];
         var cell;
 
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
-                vecBuf.itemSize, gl.FLOAT,
-                false, 0, 0);
         gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-        gl.bindBuffer(gl.ARRAY_BUFFER, vecBuf);
-
 
         if (shaderProgram.vertexNormalAttribute >= 0) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, normalBuf);
             gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute,
                                    normalBuf.itemSize, gl.FLOAT, false, 0, 0);
-            gl.bindBuffer(gl.ARRAY_BUFFER, normalBuf);
         }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, vecBuf);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
+                              vecBuf.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuf);
 
         translatedMatrix.set(mvMatrix);
         mat4.translate(translatedMatrix, [0.0, 0.0, -shift]);
@@ -286,10 +303,9 @@
                 blockMatrix.set(translatedMatrix);
                 mat4.translate(blockMatrix, [j, 0.0, -i]);
                 gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, blockMatrix);
-                gl.drawArrays(gl.TRIANGLES, 0, vecBuf.numItems);
+                gl.drawElements(gl.TRIANGLES, indexBuf.numItems, gl.UNSIGNED_SHORT, 0);
             }
         }
-
     }
 
 
