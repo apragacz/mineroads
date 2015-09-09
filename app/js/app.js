@@ -521,7 +521,7 @@
         if (state.ground) {
             if (actions[JUMP]) {
                 console.log('jump');
-                speed[1] += 0.07;
+                speed[1] += 0.09;
             }
 
         }
