@@ -31,6 +31,10 @@
         [0, 0, 1, 0, 0, 0, 1, 0, 0],
     ];
 
+    var twoBig = [
+        [0, 0, 3, 0, 0, 0, 3, 0, 0],
+    ];
+
     var twoLeft = [
         [0, 0, 1, 0, 0, 0, 0, 0, 0],
     ];
@@ -67,6 +71,7 @@
         '2t1': [[].concat(twoToOne)],
         '2z': [[].concat(zero, zero)],
         '2': [[].concat(two, two, two, two, two, two)],
+        '2b': [[].concat(two, two, twoBig, two, two)],
         '2l': [[].concat(twoLeft, twoLeft, twoLeft, twoLeft, twoLeft, twoLeft)],
         '2r': [[].concat(twoRight, twoRight, twoRight, twoRight, twoRight, twoRight)],
         '2t3': [[].concat(threeToTwo).reverse()],
@@ -100,6 +105,10 @@
             '2': 1,
             '2l': 1 ,
             '2r': 1,
+            '2b': 1,
+        },
+        '2b': {
+            '2': 1,
         },
         '2l': {
             '2': 1,
@@ -158,6 +167,7 @@
             speed: vec3.create([0, 0, 0]),
             ground: true,
             prevGround: true,
+            deadCnt: 0,
         };
     }
 
@@ -169,6 +179,7 @@
             speed: state.speed,
             ground: state.ground,
             prevGround: state.ground,
+            deadCnt: state.deadCnt,
         };
     }
 
@@ -315,6 +326,13 @@
                 mat4.translate(blockMatrix, [j, 0.0, -i]);
                 gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, blockMatrix);
                 gl.drawElements(gl.TRIANGLES, indexBuf.numItems, gl.UNSIGNED_SHORT, 0);
+
+                if (cell === 3) {
+                    blockMatrix.set(translatedMatrix);
+                    mat4.translate(blockMatrix, [j, 1.0, -i]);
+                    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, blockMatrix);
+                    gl.drawElements(gl.TRIANGLES, indexBuf.numItems, gl.UNSIGNED_SHORT, 0);
+                }
             }
         }
     }
@@ -341,7 +359,8 @@
         firstRender = false;
     }
 
-    function intersectsWithChunk(playerBBox, chunk, shift) {
+    function getIntersectingChunkBBoxes(playerBBox, chunk, shift) {
+        var bboxes = [];
         var layer = chunk[0];
         var cell;
         var vb1, vb2, bbox;
@@ -358,49 +377,90 @@
                 bbox = new BBox(vb1, vb2);
 
                 if (playerBBox.intersect(bbox)) {
-                    return true;
+                    bboxes.push(bbox);
+                }
+
+                if (cell === 3) {
+                    vb1 = vec3.create([j, 1.0, -i - shift - 1]);
+                    vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
+                    bbox = new BBox(vb1, vb2);
+
+                    if (playerBBox.intersect(bbox)) {
+                        bboxes.push(bbox);
+                    }
                 }
             }
         }
 
-        return false;
+        return bboxes;
     }
 
-    function intersectsWithLevel(playerBBox, level) {
+    function getIntersectingLevelBBoxes(playerBBox, level) {
         var chunks = level.chunks;
         var shift = 0;
+        var bboxes = [];
         for (var i = 0; i < chunks.length; i++) {
-            if (intersectsWithChunk(playerBBox, chunks[i], shift)) {
-                return true;
-            }
+            bboxes = bboxes.concat(
+                getIntersectingChunkBBoxes(playerBBox, chunks[i], shift));
             shift += chunks[i][0].length;
         }
-        return false;
+        return bboxes;
     }
 
     function getBBox(position) {
-        var vb1 = vec3.add(position, [-0.5, -0.5, -0.5], vec3.create());
-        var vb2 = vec3.add(position, [0.5, 0.5, 0.5], vec3.create());
+        var vb1 = vec3.add(position, [-0.4, -0.5, -0.5], vec3.create());
+        var vb2 = vec3.add(position, [0.4, 0.2, 0.5], vec3.create());
         return new BBox(vb1, vb2);
     }
 
     function updateState(state) {
         var newPosition = vec3.create();
         var newSpeed = vec3.create(state.speed);
-        var newPlayerBBox;
+        var newPlayerBBox, oldPlayerBBox;
+        var bboxes;
+        var bbox;
+        var i;
         var groundLevelCoord = 1.5;
+
+        if (state.deadCnt > 0) {
+            state.deadCnt++;
+            return state;
+        }
 
         vec3.add(state.position, state.speed, newPosition);
 
+        oldPlayerBBox = getBBox(state.position);
         newPlayerBBox = getBBox(newPosition);
 
-        if (intersectsWithLevel(newPlayerBBox, state.level)
-                && state.position[1] >= groundLevelCoord
-                && newPosition[1] < groundLevelCoord) {
-            newPosition[1] = groundLevelCoord;
-            state.ground = true;
-        } else {
-            state.ground = false;
+        bboxes = getIntersectingLevelBBoxes(newPlayerBBox, state.level);
+
+        state.ground = false;
+
+        for (i = 0; i < bboxes.length; ++i) {
+            bbox = bboxes[i];
+
+            if (oldPlayerBBox.lo[1] >= bbox.hi[1]
+                    && newPlayerBBox.lo[1] < bbox.hi[1]) {
+                // TODO: remove hardcoded value
+                newPosition[1] = bbox.hi[1] + 0.5;
+                newPlayerBBox = getBBox(newPosition);
+                bboxes = getIntersectingLevelBBoxes(newPlayerBBox, state.level);
+                state.ground = true;
+                break;
+            }
+        }
+
+        for (i = 0; i < bboxes.length; ++i) {
+            bbox = bboxes[i];
+
+            if (oldPlayerBBox.lo[2] >= bbox.hi[2]
+                    && newPlayerBBox.lo[2] < bbox.hi[2]) {
+                // TODO: remove hardcoded value
+                newPosition[2] = bbox.hi[2] + 0.5;
+                newPlayerBBox = getBBox(newPosition);
+                state.deadCnt = 1;
+                break;
+            }
         }
 
         if (newPosition[1] === 1.5 && newSpeed[1] < 0) {
@@ -427,6 +487,10 @@
         var speed = vec3.create(state.speed);
         var engine = state.engine;
         var turnEngine = engine * 0.2 + 0.001;
+
+        if (state.deadCnt > 0) {
+            return state;
+        }
 
         if (actions[ACCELERATE]) {
             engine += 0.0008;
