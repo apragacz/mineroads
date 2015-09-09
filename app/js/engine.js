@@ -80,16 +80,6 @@
         return shaderProgram;
     };
 
-    var createTriangleVertexPositionBuffer = function (gl, vertices) {
-        var triangleVertexPositionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, triangleVertexPositionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices),
-              gl.STATIC_DRAW);
-        triangleVertexPositionBuffer.itemSize = 3;
-        triangleVertexPositionBuffer.numItems = Math.ceil(vertices.length / 3);
-        return triangleVertexPositionBuffer;
-    };
-
     var startApp = function (initRenderingCallback, renderCallback, updateDataCallback) {
         var canvas = document.getElementById('canvas');
         var vertexShaderCode = document.getElementById('shader-vs').innerHTML;
@@ -117,6 +107,5 @@
     };
 
     root.startApp = startApp;
-    root.createVertexBuffer = createTriangleVertexPositionBuffer;
 
 }).call(this);

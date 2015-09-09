@@ -197,6 +197,17 @@
         };
     }
 
+    function createVertexBuffer(gl, vertices, itemSize) {
+        var buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices),
+              gl.STATIC_DRAW);
+        buffer.itemSize = itemSize;
+        buffer.numItems = Math.ceil(vertices.length / itemSize);
+        return buffer;
+    }
+
+
     function init(gl, shaderProgram) {
         var v = [
             [w2, h2, d2],
@@ -256,8 +267,8 @@
         console.log('normals', normals);
         console.log('indices', indices);
 
-        vecBuf = createVertexBuffer(gl, vertices);
-        normalBuf = createVertexBuffer(gl, normals);
+        vecBuf = createVertexBuffer(gl, vertices, 3);
+        normalBuf = createVertexBuffer(gl, normals, 3);
 
         indexBuf = gl.createBuffer();
         indexBuf.numItems = indices.length;
