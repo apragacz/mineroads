@@ -367,7 +367,6 @@
     }
 
     function intersectsWithLevel(playerBBox, level) {
-        //debugger;
         var chunks = level.chunks;
         var shift = 0;
         for (var i = 0; i < chunks.length; i++) {
@@ -458,7 +457,6 @@
         if (state.ground) {
             if (actions[JUMP]) {
                 console.log('jump');
-                //debugger;
                 speed[1] += 0.07;
             }
 
