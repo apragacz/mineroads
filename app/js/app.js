@@ -399,9 +399,12 @@
         var chunks = level.chunks;
         var shift = 0;
         var bboxes = [];
+        var chunkBBoxes;
         for (var i = 0; i < chunks.length; i++) {
-            bboxes = bboxes.concat(
-                getIntersectingChunkBBoxes(playerBBox, chunks[i], shift));
+            chunkBBoxes = getIntersectingChunkBBoxes(playerBBox, chunks[i], shift);
+            if (chunkBBoxes.length > 0) {
+                bboxes = bboxes.concat(chunkBBoxes);
+            }
             shift += chunks[i][0].length;
         }
         return bboxes;
