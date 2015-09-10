@@ -197,20 +197,52 @@
         return chunkIds;
     }
 
+    function getChunkBBoxes(chunk) {
+        var bboxes = [];
+        var layer = chunk.layer;
+        var shift = chunk.shift;
+        var cell;
+        var vb1, vb2;
+
+        for (var i = 0; i < layer.length; i++) {
+            for (var j = 0; j < width; j++) {
+                cell = layer[i][j];
+                if (cell === 0) {
+                    continue;
+                }
+
+                vb1 = vec3.create([j, 0.0, -i - shift - 1]);
+                vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
+                bboxes.push(new BBox(vb1, vb2));
+
+                if (cell === 3) {
+                    vb1 = vec3.create([j, 1.0, -i - shift - 1]);
+                    vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
+                    bboxes.push(new BBox(vb1, vb2));
+                }
+            }
+        }
+
+        return bboxes;
+    }
+
     function generateLevel(numOfChunks) {
         var chunkIds = generateChunkIds(numOfChunks);
         console.log('chunkIds', chunkIds);
         var chunkLayers = chunkIds.map(function (id) {return chunksMap[id][0];});
         var layer;
         var shift = 0;
+        var chunk;
         var chunks = [];
 
         for (var i = 0; i < chunkLayers.length; ++i) {
             layer = chunkLayers[i];
-            chunks.push({
+            chunk = {
                 layer: layer,
                 shift: shift,
-            });
+            };
+            chunk.bboxes = getChunkBBoxes(chunk);
+            chunks.push(chunk);
             shift += layer.length;
         }
 
@@ -365,40 +397,9 @@
     }
 
     function getIntersectingChunkBBoxes(playerBBox, chunk) {
-        var bboxes = [];
-        var layer = chunk.layer;
-        var shift = chunk.shift;
-        var cell;
-        var vb1, vb2, bbox;
-
-        for (var i = 0; i < layer.length; i++) {
-            for (var j = 0; j < width; j++) {
-                cell = layer[i][j];
-                if (cell === 0) {
-                    continue;
-                }
-
-                vb1 = vec3.create([j, 0.0, -i - shift - 1]);
-                vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
-                bbox = new BBox(vb1, vb2);
-
-                if (playerBBox.intersect(bbox)) {
-                    bboxes.push(bbox);
-                }
-
-                if (cell === 3) {
-                    vb1 = vec3.create([j, 1.0, -i - shift - 1]);
-                    vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
-                    bbox = new BBox(vb1, vb2);
-
-                    if (playerBBox.intersect(bbox)) {
-                        bboxes.push(bbox);
-                    }
-                }
-            }
-        }
-
-        return bboxes;
+        return chunk.bboxes.filter(function (bbox) {
+            return playerBBox.intersect(bbox);
+        });
     }
 
     function getIntersectingLevelBBoxes(playerBBox, level) {
