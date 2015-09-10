@@ -198,10 +198,23 @@
     }
 
     function generateLevel(numOfChunks) {
-        console.log('numOfChunks', numOfChunks);
         var chunkIds = generateChunkIds(numOfChunks);
         console.log('chunkIds', chunkIds);
-        var chunks = chunkIds.map(function (id) {return chunksMap[id];});
+        var chunkLayers = chunkIds.map(function (id) {return chunksMap[id][0];});
+        var layer;
+        var shift = 0;
+        var chunks = [];
+
+        for (var i = 0; i < chunkLayers.length; ++i) {
+            layer = chunkLayers[i];
+            chunks.push({
+                layer: layer,
+                shift: shift,
+            });
+            shift += layer.length;
+        }
+
+        console.log('chunks', chunks);
 
         return {
             chunks: chunks,
@@ -292,11 +305,12 @@
         stateStack = [];
     }
 
-    function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix, chunk, shift) {
+    function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix, chunk) {
         var translatedMatrix = mat4.create();
         var blockMatrix = mat4.create();
         var oldMVMatrixTranslated = mat4.create();
-        var layer = chunk[0];
+        var shift = chunk.shift;
+        var layer = chunk.layer;
         var cell;
 
         gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
@@ -337,9 +351,6 @@
         }
     }
 
-
-    var firstRender = true;
-
     function render(gl, shaderProgram, pMatrix, mvMatrix) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -347,21 +358,16 @@
         mat4.identity(mvMatrix);
         //mat4.rotate(mvMatrix, Math.PI / 9, [1.0, 0.0, 0.0]);
         mat4.translate(mvMatrix, negPos);
-        var chunks = currentState.level.chunks;
-        var shift = 0;
-        var shifts = [];
-        for (var i = 0; i < chunks.length; i++) {
-            renderMapChunk(gl, shaderProgram, pMatrix, mvMatrix,
-                           chunks[i], shift);
-            shifts.push(shift);
-            shift += chunks[i][0].length;
-        }
-        firstRender = false;
+        currentState.level.chunks.forEach(function (chunk) {
+            renderMapChunk(gl, shaderProgram, pMatrix, mvMatrix, chunk);
+        });
+
     }
 
-    function getIntersectingChunkBBoxes(playerBBox, chunk, shift) {
+    function getIntersectingChunkBBoxes(playerBBox, chunk) {
         var bboxes = [];
-        var layer = chunk[0];
+        var layer = chunk.layer;
+        var shift = chunk.shift;
         var cell;
         var vb1, vb2, bbox;
 
@@ -396,17 +402,14 @@
     }
 
     function getIntersectingLevelBBoxes(playerBBox, level) {
-        var chunks = level.chunks;
-        var shift = 0;
         var bboxes = [];
         var chunkBBoxes;
-        for (var i = 0; i < chunks.length; i++) {
-            chunkBBoxes = getIntersectingChunkBBoxes(playerBBox, chunks[i], shift);
+        level.chunks.forEach(function (chunk) {
+            chunkBBoxes = getIntersectingChunkBBoxes(playerBBox, chunk);
             if (chunkBBoxes.length > 0) {
                 bboxes = bboxes.concat(chunkBBoxes);
             }
-            shift += chunks[i][0].length;
-        }
+        });
         return bboxes;
     }
 
