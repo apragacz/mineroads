@@ -68,12 +68,26 @@
         [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
     ];
 
+    var oneWall = [
+        [0, 0, 0, 0, 4, 5, 4, 0, 0, 0, 0],
+    ];
+
+    var twoWall = [
+        [0, 0, 4, 5, 4, 0, 4, 5, 4, 0, 0],
+    ];
+
+    var threeWall = [
+        [4, 5, 4, 0, 4, 5, 4, 0, 4, 5, 4],
+    ];
+
     var chunkLayerMap = {
         '1z': [].concat(zero, zero),
         '1': [].concat(one, one, one, one, one, one),
+        '1w': [].concat(oneWall),
         '1t2': [].concat(twoToOne).reverse(),
         '2t1': [].concat(twoToOne),
         '2z': [].concat(zero, zero),
+        '2w': [].concat(twoWall),
         '2': [].concat(two, two, two, two, two, two),
         '2b': [].concat(two, two, twoBig, two, two),
         '2l': [].concat(twoLeft, twoLeft, twoLeft, twoLeft, twoLeft, twoLeft),
@@ -82,6 +96,7 @@
         '3t2': [].concat(threeToTwo),
         '3z': [].concat(zero, zero),
         '3': [].concat(three, three, three, three, three, three),
+        '3w': [].concat(threeWall),
     };
 
     var nextChunkIdsMap = {
@@ -90,8 +105,12 @@
         },
         '1': {
             '1': 1,
+            '1w': 1,
             '1z': 1,
             '1t2': 1,
+        },
+        '1w': {
+            '1': 1,
         },
         '1t2': {
             '2': 1,
@@ -110,6 +129,10 @@
             '2l': 1 ,
             '2r': 1,
             '2b': 1,
+            '2w': 1,
+        },
+        '2w': {
+            '2': 1,
         },
         '2b': {
             '2': 1,
@@ -133,7 +156,10 @@
             '3z': 1,
             '3t2': 1,
             '3': 1,
-        }
+        },
+        '3w': {
+            '3': 1,
+        },
     };
 
     var currentState, stateStack;
