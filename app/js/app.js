@@ -21,63 +21,67 @@
     var rot = 0;
     var vecBuf, normalBuf, indexBuf;
     var w1 = 0, w2 = 1, h1 = 0, h2 = 1, d1 = -1, d2 = 0;
-    var width = 9;
+    var width = 11;
+    var CELL_BLOCK = 1;
+    var CELL_BIGGER_BLOCK = 3;
+    var CELL_WALL = 4;
+    var CELL_WALL_HOLE = 5;
 
     var three = [
-        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
     ];
 
     var two = [
-        [0, 0, 1, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
     ];
 
     var twoBig = [
-        [0, 0, 3, 0, 0, 0, 3, 0, 0],
+        [0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0],
     ];
 
     var twoLeft = [
-        [0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
     ];
 
     var twoRight = [
-        [0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
     ];
 
     var one = [
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
     ];
 
     var zero = [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ];
 
     var threeToTwo = [
-        [1, 1, 0, 1, 1, 1, 0, 1, 1],
-        [0, 1, 0, 1, 0, 1, 0, 1, 0],
-        [0, 1, 0, 1, 0, 1, 0, 1, 0],
-        [0, 1, 0, 1, 0, 1, 0, 1, 0],
-        [0, 1, 1, 1, 0, 1, 1, 1, 0],
+        [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0],
+        [0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0],
+        [0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0],
+        [0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0],
+        [0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0],
     ];
 
     var twoToOne = [
-        [0, 0, 1, 1, 0, 1, 1, 0, 0],
-        [0, 0, 0, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
     ];
 
-    var chunksMap = {
-        '1z': [[].concat(zero, zero)],
-        '1': [[].concat(one, one, one, one, one, one)],
-        '1t2': [[].concat(twoToOne).reverse()],
-        '2t1': [[].concat(twoToOne)],
-        '2z': [[].concat(zero, zero)],
-        '2': [[].concat(two, two, two, two, two, two)],
-        '2b': [[].concat(two, two, twoBig, two, two)],
-        '2l': [[].concat(twoLeft, twoLeft, twoLeft, twoLeft, twoLeft, twoLeft)],
-        '2r': [[].concat(twoRight, twoRight, twoRight, twoRight, twoRight, twoRight)],
-        '2t3': [[].concat(threeToTwo).reverse()],
-        '3t2': [[].concat(threeToTwo)],
-        '3z': [[].concat(zero, zero)],
-        '3': [[].concat(three, three, three, three, three, three)],
+    var chunkLayerMap = {
+        '1z': [].concat(zero, zero),
+        '1': [].concat(one, one, one, one, one, one),
+        '1t2': [].concat(twoToOne).reverse(),
+        '2t1': [].concat(twoToOne),
+        '2z': [].concat(zero, zero),
+        '2': [].concat(two, two, two, two, two, two),
+        '2b': [].concat(two, two, twoBig, two, two),
+        '2l': [].concat(twoLeft, twoLeft, twoLeft, twoLeft, twoLeft, twoLeft),
+        '2r': [].concat(twoRight, twoRight, twoRight, twoRight, twoRight, twoRight),
+        '2t3': [].concat(threeToTwo).reverse(),
+        '3t2': [].concat(threeToTwo),
+        '3z': [].concat(zero, zero),
+        '3': [].concat(three, three, three, three, three, three),
     };
 
     var nextChunkIdsMap = {
@@ -188,7 +192,6 @@
         var chunkIds = [];
         var nextChunkIds;
         var nextChunkId = '1';
-        var chunkIds = [];
         for (var i = 0; i < numOfChunks; i++) {
             chunkIds.push(nextChunkId);
             nextChunkIds = Object.keys(nextChunkIdsMap[nextChunkId] || {});
@@ -229,7 +232,9 @@
     function generateLevel(numOfChunks) {
         var chunkIds = generateChunkIds(numOfChunks);
         console.log('chunkIds', chunkIds);
-        var chunkLayers = chunkIds.map(function (id) {return chunksMap[id][0];});
+        var chunkLayers = chunkIds.map(function (id) {
+            return chunkLayerMap[id];
+        });
         var layer;
         var shift = 0;
         var chunk;
@@ -337,6 +342,14 @@
         stateStack = [];
     }
 
+    function drawBlock(gl, shaderProgram, mvMatrix, position) {
+        var blockMatrix = mat4.create();
+        blockMatrix.set(mvMatrix);
+        mat4.translate(blockMatrix, position);
+        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, blockMatrix);
+        gl.drawElements(gl.TRIANGLES, indexBuf.numItems, gl.UNSIGNED_SHORT, 0);
+    }
+
     function renderMapChunk(gl ,shaderProgram, pMatrix, mvMatrix, chunk) {
         var translatedMatrix = mat4.create();
         var blockMatrix = mat4.create();
@@ -368,16 +381,15 @@
                 if (cell === 0) {
                     continue;
                 }
-                blockMatrix.set(translatedMatrix);
-                mat4.translate(blockMatrix, [j, 0.0, -i]);
-                gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, blockMatrix);
-                gl.drawElements(gl.TRIANGLES, indexBuf.numItems, gl.UNSIGNED_SHORT, 0);
+                drawBlock(gl, shaderProgram, translatedMatrix, [j, 0.0, -i]);
 
-                if (cell === 3) {
-                    blockMatrix.set(translatedMatrix);
-                    mat4.translate(blockMatrix, [j, 1.0, -i]);
-                    gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, blockMatrix);
-                    gl.drawElements(gl.TRIANGLES, indexBuf.numItems, gl.UNSIGNED_SHORT, 0);
+                if (cell === CELL_BIGGER_BLOCK) {
+                    drawBlock(gl, shaderProgram, translatedMatrix, [j, 1.0, -i]);
+                } else if (cell === CELL_WALL) {
+                    drawBlock(gl, shaderProgram, translatedMatrix, [j, 1.0, -i]);
+                    drawBlock(gl, shaderProgram, translatedMatrix, [j, 2.0, -i]);
+                } else if (cell === CELL_WALL_HOLE) {
+                    drawBlock(gl, shaderProgram, translatedMatrix, [j, 2.0, -i]);
                 }
             }
         }
