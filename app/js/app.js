@@ -252,16 +252,16 @@
                 }
 
                 if (cell === CELL_WALL) {
-                    vb1 = vec3.create([j, 2.0, -i - shift - 1]);
+                    vb1 = vec3.create([j, 1.0, -i - shift - 1]);
                     vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
                     bboxes.push(new BBox(vb1, vb2));
-                    vb1 = vec3.create([j, 3.0, -i - shift - 1]);
+                    vb1 = vec3.create([j, 2.0, -i - shift - 1]);
                     vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
                     bboxes.push(new BBox(vb1, vb2));
                 }
 
                 if (cell === CELL_WALL_HOLE) {
-                    vb1 = vec3.create([j, 3.0, -i - shift - 1]);
+                    vb1 = vec3.create([j, 2.0, -i - shift - 1]);
                     vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
                     bboxes.push(new BBox(vb1, vb2));
                 }
