@@ -67,15 +67,20 @@
             gl.getAttribLocation(shaderProgram, 'aVertexPosition');
         shaderProgram.vertexNormalAttribute =
             gl.getAttribLocation(shaderProgram, 'aVertexNormal');
+        shaderProgram.textureCoordAttribute =
+            gl.getAttribLocation(shaderProgram, 'aTextureCoord');
         shaderProgram.pMatrixUniform =
             gl.getUniformLocation(shaderProgram, 'uPMatrix');
         shaderProgram.mvMatrixUniform =
             gl.getUniformLocation(shaderProgram, 'uMVMatrix');
         shaderProgram.nMatrixUniform =
             gl.getUniformLocation(shaderProgram, 'uNMatrix');
+        shaderProgram.uSamplerUniform =
+            gl.getUniformLocation(shaderProgram, 'uSampler');
 
         gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
         gl.enableVertexAttribArray(shaderProgram.vertexNormalAttribute);
+        gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
 
         return shaderProgram;
     };
