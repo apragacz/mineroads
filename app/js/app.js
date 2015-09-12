@@ -27,6 +27,10 @@
     var CELL_BIGGER_BLOCK = 3;
     var CELL_WALL = 4;
     var CELL_WALL_HOLE = 5;
+    var MENU_MAIN = 'main';
+    var MENU_GAME = 'game';
+    var MENU_INSTRUCTIONS = 'instructions';
+    var menuState = MENU_MAIN;
 
     var three = [
         [0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
@@ -172,6 +176,7 @@
     var MOVE_RIGHT = 'move-right';
     var JUMP = 'jump';
     var REVERSE_TIME = 'reverse-time';
+    var ESCAPE = 'ESCAPE';
 
     var controlType = 1;
     var keyMap;
@@ -188,6 +193,7 @@
         //17: JUMP,
         82: REVERSE_TIME,
         //13: FIRE,
+        27: ESCAPE,
     };
 
     function getDefaultState(level) {
@@ -301,6 +307,11 @@
         };
     }
 
+    function setupState(oldState) {
+        currentState = getDefaultState(generateLevel(20));
+        stateStack = [];
+    }
+
     function createBlockImage() {
         var canvas = document.createElement('canvas');
         canvas.width = 16;
@@ -335,7 +346,6 @@
         buffer.numItems = Math.ceil(vertices.length / itemSize);
         return buffer;
     }
-
 
     function init(gl, shaderProgram) {
         var v = [
@@ -419,8 +429,7 @@
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices),
                       gl.STATIC_DRAW);
 
-        currentState = getDefaultState(generateLevel(40));
-        stateStack = [];
+        setupState();
     }
 
     function drawBlock(gl, shaderProgram, mvMatrix, position) {
@@ -638,21 +647,47 @@
         return state;
     }
 
+    function isLevelFinished(state) {
+        var chunks = state.level.chunks;
+        var lastChunk = chunks[chunks.length - 1];
+        var levelEnd = lastChunk.shift + lastChunk.layer.length;
+
+        return state.position[2] < -levelEnd;
+    }
+
     function updateData() {
-        if (actions[REVERSE_TIME]) {
-            if (stateStack.length >= 2) {
-                stateStack.pop();
-                currentState = stateStack.pop();
+        if (menuState === MENU_MAIN) {
+
+        } else if (menuState === MENU_INSTRUCTIONS) {
+
+        }
+        else {
+            if (isLevelFinished(currentState)) {
+                setupState();
             }
-        } else {
-            currentState = copyState(currentState);
-            react(currentState);
-            updateState(currentState);
-            stateStack.push(currentState);
-            if (stateStack.length > 300) {
-                stateStack.shift();
+
+            if (actions[ESCAPE]) {
+                menuState = MENU_MAIN;
+                menuMain.classList.remove('hidden');
+                menuInstructions.classList.add('hidden');
+            }
+
+            if (actions[REVERSE_TIME]) {
+                if (stateStack.length >= 2) {
+                    stateStack.pop();
+                    currentState = stateStack.pop();
+                }
+            } else {
+                currentState = copyState(currentState);
+                react(currentState);
+                updateState(currentState);
+                stateStack.push(currentState);
+                if (stateStack.length > 300) {
+                    stateStack.shift();
+                }
             }
         }
+
     }
 
     this.init = init;
@@ -674,5 +709,35 @@
             actions[keyMap[keyCode]] = true;
         }
     }, false);
+
+    var menuMain = document.querySelector('.menu-main');
+    var menuInstructions = document.querySelector('.menu-instructions');
+    var menuItemStart = document.querySelector('.menu-item-start');
+    var menuItemInstructions = document.querySelector('.menu-item-instructions');
+    var menuItemMain = document.querySelector('.menu-item-main');
+
+    menuItemStart.addEventListener('click', function (e) {
+        e.preventDefault();
+        menuState = MENU_GAME;
+        menuMain.classList.add('hidden');
+        menuInstructions.classList.add('hidden');
+        setupState();
+    });
+
+    menuItemInstructions.addEventListener('click', function (e) {
+        e.preventDefault();
+        menuState = MENU_INSTRUCTIONS;
+        menuMain.classList.add('hidden');
+        menuInstructions.classList.remove('hidden');
+    });
+
+    menuItemMain.addEventListener('click', function (e) {
+        e.preventDefault();
+        menuState = MENU_MAIN;
+        menuInstructions.classList.add('hidden');
+        menuMain.classList.remove('hidden');
+    });
+
+
 
 }).call(this);

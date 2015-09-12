@@ -4,9 +4,40 @@ body {
     background: #333;
 }
 
+body, a {
+    color: #fff;
+    font-family: Arial, Verdana;
+    cursor: crosshair;
+    text-decoration: none;
+}
+
 #canvas-container {
+    position: relative;
+    text-align: left;
     width: 800px;
-    height: 500px;
+    height: 600px;
     margin: auto;
     cursor: none;
+}
+
+canvas {
+    position: absolute;
+}
+
+
+.menu {
+    position: absolute;
+    width: 600px;
+    height: 400px;
+    padding: 100px;
+}
+
+.menu-item {
+    display: block;
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.hidden {
+    display: none;
 }

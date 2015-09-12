@@ -9,7 +9,23 @@
 </head>
 <body>
     <div id="canvas-container">
-        <canvas id="canvas" width="800" height="600">
+        <canvas id="canvas" width="800" height="600"></canvas>
+        <div class="menu menu-main">
+            <h1>MineRoads</h1>
+
+            <a href="#" class="menu-item menu-item-start">Start new game</a>
+            <a href="#" class="menu-item menu-item-instructions">Instructions</a>
+        </div>
+        <div class="menu menu-instructions hidden">
+            <h1>Instructions</h1>
+
+            <p>Use the arrows to accelerate/stop, turn left/right<p>
+            <p>Use Space to jump<p>
+            <p>Use 'R' to reverse time<p>
+
+            <a href="#" class="menu-item menu-item-main">Go back</a>
+        </div>
+    </div>
     </div>
     <script id="shader-fs" type="x-shader/x-fragment">
         precision mediump float;
