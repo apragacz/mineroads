@@ -19,7 +19,8 @@
     };
 
     var rot = 0;
-    var vecBuf, normalBuf, indexBuf;
+    var vecBuf, normalBuf, texCoordBuf, indexBuf;
+    var blockTexture;
     var w1 = 0, w2 = 1, h1 = 0, h2 = 1, d1 = -1, d2 = 0;
     var width = 11;
     var CELL_BLOCK = 1;
@@ -244,11 +245,27 @@
                 vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
                 bboxes.push(new BBox(vb1, vb2));
 
-                if (cell === 3) {
+                if (cell === CELL_BIGGER_BLOCK) {
                     vb1 = vec3.create([j, 1.0, -i - shift - 1]);
                     vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
                     bboxes.push(new BBox(vb1, vb2));
                 }
+
+                if (cell === CELL_WALL) {
+                    vb1 = vec3.create([j, 2.0, -i - shift - 1]);
+                    vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
+                    bboxes.push(new BBox(vb1, vb2));
+                    vb1 = vec3.create([j, 3.0, -i - shift - 1]);
+                    vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
+                    bboxes.push(new BBox(vb1, vb2));
+                }
+
+                if (cell === CELL_WALL_HOLE) {
+                    vb1 = vec3.create([j, 3.0, -i - shift - 1]);
+                    vb2 = vec3.add(vb1, [1, 1, 1], vec3.create());
+                    bboxes.push(new BBox(vb1, vb2));
+                }
+
             }
         }
 
@@ -284,6 +301,31 @@
         };
     }
 
+    function createBlockImage() {
+        var canvas = document.createElement('canvas');
+        canvas.width = 16;
+        canvas.height = 16;
+        var ctx = canvas.getContext('2d');
+
+        var cxlg = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        cxlg.addColorStop(0, '#777');
+        cxlg.addColorStop(0.5, '#999');
+        cxlg.addColorStop(1.0, '#777');
+
+        ctx.fillStyle = cxlg;
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        return canvas;
+    }
+
+    function createTexture(gl, canvas) {
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        return texture;
+    }
+
     function createVertexBuffer(gl, vertices, itemSize) {
         var buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -313,6 +355,16 @@
             .concat(v[4], v[5], v[1], v[0])
             .concat(v[3], v[2], v[6], v[7])
         ;
+
+        var sideTexCoords = [
+            0.0, 0.0,
+            0.0, 1.0,
+            1.0, 1.0,
+            1.0, 0.0,
+        ];
+
+        var texCoords = []
+            .concat(sideTexCoords, sideTexCoords, sideTexCoords, sideTexCoords, sideTexCoords);
 
         var indices = [
             0, 1, 2,
@@ -356,10 +408,13 @@
 
         vecBuf = createVertexBuffer(gl, vertices, 3);
         normalBuf = createVertexBuffer(gl, normals, 3);
+        texCoordBuf = createVertexBuffer(gl, texCoords, 2);
 
         indexBuf = gl.createBuffer();
         indexBuf.numItems = indices.length;
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuf);
+
+        blockTexture = createTexture(gl, createBlockImage(16, 16));
 
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices),
                       gl.STATIC_DRAW);
@@ -386,11 +441,17 @@
 
         gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
 
-        if (shaderProgram.vertexNormalAttribute >= 0) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, normalBuf);
-            gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute,
-                                   normalBuf.itemSize, gl.FLOAT, false, 0, 0);
-        }
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, blockTexture);
+        gl.uniform1i(shaderProgram.uSamplerUniform, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuf);
+        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute,
+                               texCoordBuf.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuf);
+        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute,
+                               normalBuf.itemSize, gl.FLOAT, false, 0, 0);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, vecBuf);
         gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
@@ -489,11 +550,12 @@
                 // TODO: remove hardcoded value
                 newPosition[1] = bbox.hi[1] + 0.5;
                 newPlayerBBox = getBBox(newPosition);
-                bboxes = getIntersectingLevelBBoxes(newPlayerBBox, state.level);
                 state.ground = true;
                 break;
             }
         }
+
+        bboxes = getIntersectingLevelBBoxes(newPlayerBBox, state.level);
 
         for (i = 0; i < bboxes.length; ++i) {
             bbox = bboxes[i];
