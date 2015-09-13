@@ -86,10 +86,12 @@
     };
 
     var startApp = function (initRenderingCallback, renderCallback, updateDataCallback) {
-        var canvas = document.getElementById('canvas');
+        var canvas = document.getElementById('canvas-gl');
+        var canvasHUD = document.getElementById('canvas-hud');
         var vertexShaderCode = document.getElementById('shader-vs').innerHTML;
         var fragmentShaderCode = document.getElementById('shader-fs').innerHTML;
         var gl = getGLContext(canvas);
+        var ctx = canvasHUD.getContext('2d');
 
         if (!gl) {
             alert('no gl ;(');
@@ -99,7 +101,7 @@
         var pMatrix = glInitData.projectionMatrix;
         var mvMatrix = glInitData.modelViewMatrix;
         var shaderProgram = createShaderProgram(gl, vertexShaderCode, fragmentShaderCode);
-        initRenderingCallback(gl, shaderProgram, pMatrix, mvMatrix);
+        initRenderingCallback(gl, shaderProgram, pMatrix, mvMatrix, ctx);
         console.log('gl init ok');
 
         function asyncAnimLoop() {

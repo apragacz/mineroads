@@ -21,6 +21,7 @@
     var rot = 0;
     var vecBuf, normalBuf, texCoordBuf, indexBuf;
     var blockTexture;
+    var hudCtx;
     var w1 = 0, w2 = 1, h1 = 0, h2 = 1, d1 = -1, d2 = 0;
     var width = 11;
     var CELL_BLOCK = 1;
@@ -197,7 +198,7 @@
         27: ESCAPE,
     };
 
-    function getDefaultState(level) {
+    function getDefaultState(level, score) {
         return {
             level: level,
             engine: 0,
@@ -206,7 +207,9 @@
             ground: true,
             prevGround: true,
             deadCnt: 0,
+            finishCnt: 0,
             exploded: false,
+            score: score || 0,
         };
     }
 
@@ -219,7 +222,9 @@
             ground: state.ground,
             prevGround: state.ground,
             deadCnt: state.deadCnt,
+            finishCnt: state.finishCnt,
             exploded: state.exploded,
+            score: state.score,
         };
     }
 
@@ -314,8 +319,9 @@
 
     function setupState(oldState) {
         var levelNum = oldState ? oldState.level.num : 0;
+        var score = oldState ? oldState.score : 0;
         levelNum++;
-        currentState = getDefaultState(generateLevel(levelNum));
+        currentState = getDefaultState(generateLevel(levelNum), score);
         stateStack = [];
     }
 
@@ -354,7 +360,7 @@
         return buffer;
     }
 
-    function init(gl, shaderProgram) {
+    function init(gl, shaderProgram, pMatrix, mvMatrix, ctx) {
         var v = [
             [w2, h2, d2],
             [w2, h2, d1],
@@ -432,6 +438,8 @@
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices),
                       gl.STATIC_DRAW);
 
+        hudCtx = ctx;
+
         setupState();
     }
 
@@ -505,7 +513,16 @@
             renderMapChunk(gl, shaderProgram, pMatrix, mvMatrix, chunk);
         });
 
+        hudCtx.clearRect(0, 0, 800, 600);
+        if (menuState === MENU_GAME) {
+            hudCtx.fillStyle = 'white';
+            hudCtx.font = '20px Arial';
+            hudCtx.fillText('Level ' + currentState.level.num, 5, 35);
+            hudCtx.fillText('Score ' + currentState.score, 85, 35);
+        }
+
         setOverlay(currentState.deadCnt / DEAD_COUNTER_MAX);
+
     }
 
     function getIntersectingChunkBBoxes(playerBBox, chunk) {
@@ -573,6 +590,20 @@
                 break;
             }
         }
+        bboxes = getIntersectingLevelBBoxes(newPlayerBBox, state.level);
+
+        for (i = 0; i < bboxes.length; ++i) {
+            bbox = bboxes[i];
+
+            if (oldPlayerBBox.hi[1] <= bbox.lo[1]
+                    && newPlayerBBox.hi[1] > bbox.lo[1]) {
+                // TODO: remove hardcoded value
+                newPosition[1] = bbox.lo[1] - 0.2;
+                newPlayerBBox = getBBox(newPosition);
+                break;
+            }
+        }
+
 
         bboxes = getIntersectingLevelBBoxes(newPlayerBBox, state.level);
 
