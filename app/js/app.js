@@ -169,6 +169,26 @@
         },
     };
 
+
+    var chunkEndLayerMap = {
+        '1z': '1w',
+        '1': '1w',
+        '1w': '1w',
+        '1t2': '2w',
+        '2t1': '1w',
+        '2z': '2w',
+        '2w': '2w',
+        '2': '2w',
+        '2b': '2w',
+        '2l': '2w',
+        '2r': '2w',
+        '2t3': '3w',
+        '3t2': '2w',
+        '3z': '3w',
+        '3': '3w',
+        '3w': '3w',
+    };
+
     var currentState, stateStack;
     var negPos = vec3.create();
 
@@ -239,6 +259,8 @@
             nextChunkIds = Object.keys(nextChunkIdsMap[nextChunkId] || {});
             nextChunkId = nextChunkIds[(Math.random() * nextChunkIds.length)|0];
         }
+        nextChunkId = chunkEndLayerMap[chunkIds[chunkIds.length - 1]];
+        chunkIds.push(nextChunkId);
         return chunkIds;
     }
 
@@ -518,11 +540,21 @@
         if (menuState === MENU_GAME) {
             hudCtx.fillStyle = 'white';
             hudCtx.font = '20px Arial';
-            hudCtx.fillText('Level ' + currentState.level.num, 5, 35);
-            hudCtx.fillText('Score ' + currentState.score, 85, 35);
+            hudCtx.textAlign = 'left';
+            hudCtx.fillText('Level ' + currentState.level.num, 15, 35);
+            hudCtx.fillText('Score ' + currentState.score, 120, 35);
+
+            if (currentState.finishCnt > 0) {
+                hudCtx.font = '40px Arial';
+                hudCtx.textAlign = 'center';
+                hudCtx.fillText('Level Finished!', 400, 300);
+
+            }
         }
 
-        setOverlay(currentState.deadCnt / DEAD_COUNTER_MAX);
+        var cnt = Math.max(currentState.deadCnt, currentState.finishCnt);
+
+        setOverlay(cnt / DEAD_COUNTER_MAX);
 
     }
 
@@ -550,6 +582,14 @@
         return new BBox(vb1, vb2);
     }
 
+    function isLevelFinished(state) {
+        var chunks = state.level.chunks;
+        var lastChunk = chunks[chunks.length - 1];
+        var levelEnd = lastChunk.shift + lastChunk.layer.length;
+
+        return state.position[2] < -levelEnd;
+    }
+
     function updateState(state) {
         var newPosition = vec3.create();
         var newSpeed = vec3.create(state.speed);
@@ -557,6 +597,15 @@
         var bboxes;
         var bbox;
         var i;
+
+        if (isLevelFinished(state)) {
+            if (state.ground  && state.finishCnt === 0) {
+                state.finishCnt = 1;
+            }
+            if (!state.ground && state.deadCnt === 0) {
+                state.deadCnt = 1;
+            }
+        }
 
         if (state.deadCnt > 0) {
             state.deadCnt++;
@@ -698,14 +747,6 @@
         return state;
     }
 
-    function isLevelFinished(state) {
-        var chunks = state.level.chunks;
-        var lastChunk = chunks[chunks.length - 1];
-        var levelEnd = lastChunk.shift + lastChunk.layer.length;
-
-        return state.position[2] < -levelEnd;
-    }
-
     var menuMain = document.querySelector('.menu-main');
     var menuInstructions = document.querySelector('.menu-instructions');
     var menuGameOver = document.querySelector('.menu-over');
@@ -757,7 +798,7 @@
                 switchToGameOver();
                 return;
             }
-            if (isLevelFinished(currentState)) {
+            if (currentState.finishCnt > DEAD_COUNTER_MAX) {
                 setupState(currentState);
             }
 
