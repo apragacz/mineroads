@@ -30,6 +30,7 @@
     var CELL_WALL_HOLE = 5;
     var MENU_MAIN = 'main';
     var MENU_GAME = 'game';
+    var MENU_GAME_OVER = 'over';
     var MENU_INSTRUCTIONS = 'instructions';
     var menuState = MENU_MAIN;
 
@@ -705,6 +706,46 @@
         return state.position[2] < -levelEnd;
     }
 
+    var menuMain = document.querySelector('.menu-main');
+    var menuInstructions = document.querySelector('.menu-instructions');
+    var menuGameOver = document.querySelector('.menu-over');
+    var overlay = document.querySelector('.overlay');
+
+    function resetMenus() {
+        menuMain.classList.add('hidden');
+        menuInstructions.classList.add('hidden');
+        menuGameOver.classList.add('hidden');
+    }
+
+    function switchToMainMenu() {
+        resetMenus();
+        menuState = MENU_MAIN;
+        menuMain.classList.remove('hidden');
+    }
+
+    function switchToStart() {
+        resetMenus();
+        menuState = MENU_GAME;
+        setOverlay(0);
+        setupState();
+    }
+
+    function switchToGameOver() {
+        resetMenus();
+        menuState = MENU_GAME_OVER;
+        menuGameOver.classList.remove('hidden');
+    }
+
+    function switchToInstructions() {
+        resetMenus();
+        menuState = MENU_INSTRUCTIONS;
+        menuInstructions.classList.remove('hidden');
+    }
+
+    function setOverlay(alpha) {
+        overlay.style.background = 'rgba(0,0,0,' + alpha + ')';
+    }
+
     function updateData() {
         if (menuState === MENU_MAIN) {
 
@@ -713,7 +754,7 @@
         }
         else {
             if (currentState.deadCnt > DEAD_COUNTER_MAX) {
-                switchToMainMenu();
+                switchToGameOver();
                 return;
             }
             if (isLevelFinished(currentState)) {
@@ -721,9 +762,7 @@
             }
 
             if (actions[ESCAPE]) {
-                menuState = MENU_MAIN;
-                menuMain.classList.remove('hidden');
-                menuInstructions.classList.add('hidden');
+                switchToMainMenu();
             }
 
             if (actions[REVERSE_TIME]) {
@@ -762,42 +801,30 @@
         }
     }, false);
 
-    var menuMain = document.querySelector('.menu-main');
-    var menuInstructions = document.querySelector('.menu-instructions');
-    var menuItemStart = document.querySelector('.menu-item-start');
-    var menuItemInstructions = document.querySelector('.menu-item-instructions');
-    var menuItemMain = document.querySelector('.menu-item-main');
-    var overlay = document.querySelector('.overlay');
+    var menuItemStartList = document.querySelectorAll('.menu-item-start');
+    var menuItemInstructionsList = document.querySelectorAll('.menu-item-instructions');
+    var menuItemMainList = document.querySelectorAll('.menu-item-main');
 
-    function switchToMainMenu() {
-        menuState = MENU_MAIN;
-        menuInstructions.classList.add('hidden');
-        menuMain.classList.remove('hidden');
-    }
-
-    function setOverlay(alpha) {
-        overlay.style.background = 'rgba(0,0,0,' + alpha + ')';
-    }
-
-    menuItemStart.addEventListener('click', function (e) {
-        e.preventDefault();
-        menuState = MENU_GAME;
-        menuMain.classList.add('hidden');
-        menuInstructions.classList.add('hidden');
-        setOverlay(0);
-        setupState();
+    [].forEach.call(menuItemStartList, function (elem) {
+        elem.addEventListener('click', function (e) {
+            e.preventDefault();
+            switchToStart();
+        });
     });
 
-    menuItemInstructions.addEventListener('click', function (e) {
-        e.preventDefault();
-        menuState = MENU_INSTRUCTIONS;
-        menuMain.classList.add('hidden');
-        menuInstructions.classList.remove('hidden');
+
+    [].forEach.call(menuItemInstructionsList, function (elem) {
+        elem.addEventListener('click', function (e) {
+            e.preventDefault();
+            switchToInstructions();
+        });
     });
 
-    menuItemMain.addEventListener('click', function (e) {
-        e.preventDefault();
-        switchToMainMenu();
+    [].forEach.call(menuItemMainList, function (elem) {
+        elem.addEventListener('click', function (e) {
+            e.preventDefault();
+            switchToMainMenu();
+        });
     });
 
 
