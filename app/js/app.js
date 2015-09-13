@@ -419,10 +419,6 @@
             normals = normals.concat(cvr, cvr, cvr, cvr);
         }
 
-        console.log('vertices', vertices);
-        console.log('normals', normals);
-        console.log('indices', indices);
-
         vecBuf = createVertexBuffer(gl, vertices, 3);
         normalBuf = createVertexBuffer(gl, normals, 3);
         texCoordBuf = createVertexBuffer(gl, texCoords, 2);
@@ -545,7 +541,6 @@
         var i;
 
         if (state.deadCnt > 0) {
-            console.log('deadCnt', state.deadCnt);
             state.deadCnt++;
         }
 
@@ -652,7 +647,6 @@
 
         if (state.ground) {
             if (actions[JUMP]) {
-                console.log('jump');
                 speed[1] += 0.09;
             }
 
@@ -716,7 +710,6 @@
 
     window.addEventListener('keyup', function (e) {
         var keyCode = e.which || e.keyCode;
-        console.log('keyup', keyCode);
         if (keyMap[keyCode]) {
             actions[keyMap[keyCode]] = false;
         }
@@ -724,7 +717,6 @@
 
     window.addEventListener('keydown', function (e) {
         var keyCode = e.which || e.keyCode;
-        console.log('keydown', keyCode);
         if (keyMap[keyCode]) {
             actions[keyMap[keyCode]] = true;
         }
