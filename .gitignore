@@ -1,4 +1,5 @@
 /node_modules/
 /build/
 /dist/
+/app/js/all.js
 game.zip

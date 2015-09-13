@@ -3,10 +3,28 @@ concat = require('gulp-concat')
 cssmin = require('gulp-cssmin')
 gulpif = require('gulp-if')
 jshint = require("gulp-jshint")
+del = require('del')
 minifyHTML = require('gulp-minify-html')
 uglify = require('gulp-uglify')
 useref = require('gulp-useref');
 zip = require('gulp-zip');
+
+gulp.task 'app-del-js', ->
+    del(['app/js/all.js'])
+
+
+gulp.task 'app-concat-js', ['app-del-js'], ->
+    gulp.src('app/js/*.js')
+        .pipe(concat('js/all.js'))
+        .pipe(gulp.dest('app'))
+
+
+
+gulp.task 'minify-js', ['app-del-js'], ->
+    gulp.src('app/js/*.js')
+        .pipe(uglify())
+        .pipe(concat('js/all.js'))
+        .pipe(gulp.dest('dist'))
 
 
 gulp.task 'process-html', ->
@@ -27,7 +45,7 @@ gulp.task 'copy-img', ->
         .pipe(gulp.dest('dist/img/'))
 
 
-gulp.task 'build', ['process-html', 'copy-img'], ->
+gulp.task 'build', ['minify-js', 'process-html', 'copy-img'], ->
 
 
 gulp.task 'zip', ['build'], ->
