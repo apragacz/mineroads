@@ -561,6 +561,11 @@
             state.deadCnt++;
         }
 
+        if (state.finishCnt > 0) {
+            state.finishCnt++;
+            return state;
+        }
+
         if (!state.exploded) {
             vec3.add(state.position, state.speed, newPosition);
         } else {
@@ -632,6 +637,10 @@
         if (state.ground) {
             // left/right friction
             newSpeed[0] *= 0.5;
+        }
+
+        if (Math.floor(state.position[2]) > Math.floor(newPosition[2])) {
+            state.score += Math.floor(-newSpeed[2] * 1000);
         }
 
         state.position = newPosition;
@@ -708,7 +717,7 @@
                 return;
             }
             if (isLevelFinished(currentState)) {
-                setupState();
+                setupState(currentState);
             }
 
             if (actions[ESCAPE]) {
