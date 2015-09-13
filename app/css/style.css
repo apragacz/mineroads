@@ -11,6 +11,10 @@ body, a {
     text-decoration: none;
 }
 
+a {
+    outline: 0;
+}
+
 #canvas-container {
     position: relative;
     text-align: left;
@@ -24,8 +28,12 @@ canvas {
     position: absolute;
 }
 
+h1 {
+    font-size: 40px;
+}
 
-.menu {
+
+.menu, .overlay {
     position: absolute;
     width: 600px;
     height: 400px;
@@ -34,7 +42,8 @@ canvas {
 
 .menu-item {
     display: block;
-    font-size: 20px;
+    font-size: 24px;
+    margin-top: 10px;
     margin-bottom: 10px;
 }
 

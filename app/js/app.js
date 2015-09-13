@@ -182,6 +182,7 @@
     var keyMap;
     var MAX_FORWARD_SPEED = 0.3;
     var MAX_TURN_SPEED = 0.5;
+    var DEAD_COUNTER_MAX = Math.ceil(1 * (1000 / 16));
     var actions = {};
     keyMap = {
         37: MOVE_LEFT,
@@ -205,6 +206,7 @@
             ground: true,
             prevGround: true,
             deadCnt: 0,
+            exploded: false,
         };
     }
 
@@ -217,6 +219,7 @@
             ground: state.ground,
             prevGround: state.ground,
             deadCnt: state.deadCnt,
+            exploded: state.exploded,
         };
     }
 
@@ -278,7 +281,8 @@
         return bboxes;
     }
 
-    function generateLevel(numOfChunks) {
+    function generateLevel(levelNum) {
+        var numOfChunks = 15 + 2 * levelNum;
         var chunkIds = generateChunkIds(numOfChunks);
         console.log('chunkIds', chunkIds);
         var chunkLayers = chunkIds.map(function (id) {
@@ -303,12 +307,15 @@
         console.log('chunks', chunks);
 
         return {
+            num: levelNum,
             chunks: chunks,
         };
     }
 
     function setupState(oldState) {
-        currentState = getDefaultState(generateLevel(20));
+        var levelNum = oldState ? oldState.level.num : 0;
+        levelNum++;
+        currentState = getDefaultState(generateLevel(levelNum));
         stateStack = [];
     }
 
@@ -502,6 +509,7 @@
             renderMapChunk(gl, shaderProgram, pMatrix, mvMatrix, chunk);
         });
 
+        setOverlay(currentState.deadCnt / DEAD_COUNTER_MAX);
     }
 
     function getIntersectingChunkBBoxes(playerBBox, chunk) {
@@ -535,14 +543,17 @@
         var bboxes;
         var bbox;
         var i;
-        var groundLevelCoord = 1.5;
 
         if (state.deadCnt > 0) {
+            console.log('deadCnt', state.deadCnt);
             state.deadCnt++;
-            return state;
         }
 
-        vec3.add(state.position, state.speed, newPosition);
+        if (!state.exploded) {
+            vec3.add(state.position, state.speed, newPosition);
+        } else {
+            vec3.set(state.position, newPosition);
+        }
 
         oldPlayerBBox = getBBox(state.position);
         newPlayerBBox = getBBox(newPosition);
@@ -550,6 +561,10 @@
         bboxes = getIntersectingLevelBBoxes(newPlayerBBox, state.level);
 
         state.ground = false;
+
+        if (newPlayerBBox.lo[1] < -4 && state.deadCnt === 0) {
+            state.deadCnt = 1;
+        }
 
         for (i = 0; i < bboxes.length; ++i) {
             bbox = bboxes[i];
@@ -575,6 +590,7 @@
                 newPosition[2] = bbox.hi[2] + 0.5;
                 newPlayerBBox = getBBox(newPosition);
                 state.deadCnt = 1;
+                state.exploded = true;
                 break;
             }
         }
@@ -662,6 +678,10 @@
 
         }
         else {
+            if (currentState.deadCnt > DEAD_COUNTER_MAX) {
+                switchToMainMenu();
+                return;
+            }
             if (isLevelFinished(currentState)) {
                 setupState();
             }
@@ -715,12 +735,24 @@
     var menuItemStart = document.querySelector('.menu-item-start');
     var menuItemInstructions = document.querySelector('.menu-item-instructions');
     var menuItemMain = document.querySelector('.menu-item-main');
+    var overlay = document.querySelector('.overlay');
+
+    function switchToMainMenu() {
+        menuState = MENU_MAIN;
+        menuInstructions.classList.add('hidden');
+        menuMain.classList.remove('hidden');
+    }
+
+    function setOverlay(alpha) {
+        overlay.style.background = 'rgba(0,0,0,' + alpha + ')';
+    }
 
     menuItemStart.addEventListener('click', function (e) {
         e.preventDefault();
         menuState = MENU_GAME;
         menuMain.classList.add('hidden');
         menuInstructions.classList.add('hidden');
+        setOverlay(0);
         setupState();
     });
 
@@ -733,9 +765,7 @@
 
     menuItemMain.addEventListener('click', function (e) {
         e.preventDefault();
-        menuState = MENU_MAIN;
-        menuInstructions.classList.add('hidden');
-        menuMain.classList.remove('hidden');
+        switchToMainMenu();
     });
 
 
